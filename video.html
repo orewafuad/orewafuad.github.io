@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Netflix Mode Player</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+body {
+    margin: 0;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.player {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    aspect-ratio: 16/9;
+    background: black;
+    overflow: hidden;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* OVERLAY */
+.overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    opacity: 0;
+    transition: 0.3s;
+}
+
+.player.show .overlay {
+    opacity: 1;
+}
+
+/* TOP */
+.top {
+    padding: 20px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+    color: white;
+    text-align: center;
+}
+
+/* CENTER */
+.center-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 60px;
+    color: white;
+    cursor: pointer;
+}
+
+/* BOTTOM */
+.bottom {
+    padding: 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+}
+
+.progress {
+    height: 5px;
+    background: rgba(255,255,255,0.3);
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.bar {
+    height: 100%;
+    width: 0%;
+    background: red;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+}
+
+.left, .right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.time {
+    font-family: monospace;
+}
+</style>
+</head>
+
+<body>
+
+<div class="player" id="player">
+    <video id="video">
+        <source src="https://www.w3schools.com/html/mov_bbb.mp4">
+    </video>
+
+    <div class="overlay" id="overlay">
+        <div class="top">Detective Conan - Episode 1194</div>
+
+        <div class="center-btn" id="centerPlay">
+            <i class="fas fa-play"></i>
+        </div>
+
+        <div class="bottom">
+            <div class="progress" id="progress">
+                <div class="bar" id="bar"></div>
+            </div>
+
+            <div class="controls">
+                <div class="left">
+                    <button id="back"><i class="fas fa-rotate-left"></i></button>
+                    <button id="play"><i class="fas fa-play"></i></button>
+                    <button id="forward"><i class="fas fa-rotate-right"></i></button>
+                    <span class="time">
+                        <span id="cur">00:00</span> / <span id="dur">00:00</span>
+                    </span>
+                </div>
+
+                <div class="right">
+                    <button id="mute"><i class="fas fa-volume-up"></i></button>
+                    <button id="fs"><i class="fas fa-expand"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const video = document.getElementById("video");
+const player = document.getElementById("player");
+
+const playBtn = document.getElementById("play");
+const centerPlay = document.getElementById("centerPlay");
+
+const bar = document.getElementById("bar");
+const progress = document.getElementById("progress");
+
+const cur = document.getElementById("cur");
+const dur = document.getElementById("dur");
+
+const fs = document.getElementById("fs");
+const mute = document.getElementById("mute");
+
+let timeout;
+
+/* SHOW UI */
+function showUI() {
+    player.classList.add("show");
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+        if (!video.paused) player.classList.remove("show");
+    }, 2000);
+}
+
+player.addEventListener("mousemove", showUI);
+player.addEventListener("click", showUI);
+
+/* PLAY */
+function togglePlay() {
+    if (video.paused) {
+        video.play();
+        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        centerPlay.innerHTML = '';
+    } else {
+        video.pause();
+        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+        centerPlay.innerHTML = '<i class="fas fa-play"></i>';
+    }
+}
+
+playBtn.onclick = togglePlay;
+centerPlay.onclick = togglePlay;
+video.onclick = togglePlay;
+
+/* TIME */
+video.ontimeupdate = () => {
+    bar.style.width = (video.currentTime / video.duration) * 100 + "%";
+    cur.innerText = format(video.currentTime);
+    dur.innerText = format(video.duration);
+};
+
+function format(t){
+    let m = Math.floor(t/60);
+    let s = Math.floor(t%60);
+    return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+}
+
+/* SEEK CLICK */
+progress.onclick = e => {
+    let percent = e.offsetX / progress.clientWidth;
+    video.currentTime = percent * video.duration;
+};
+
+/* 🔥 DRAG SEEK */
+let isDragging = false;
+
+function updateProgress(clientX) {
+    const rect = progress.getBoundingClientRect();
+    let x = clientX - rect.left;
+
+    if (x < 0) x = 0;
+    if (x > rect.width) x = rect.width;
+
+    const percent = x / rect.width;
+    bar.style.width = percent * 100 + "%";
+    video.currentTime = percent * video.duration;
+}
+
+progress.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    updateProgress(e.clientX);
+});
+
+document.addEventListener("mousemove", (e) => {
+    if (isDragging) updateProgress(e.clientX);
+});
+
+document.addEventListener("mouseup", () => {
+    isDragging = false;
+});
+
+progress.addEventListener("touchstart", (e) => {
+    isDragging = true;
+    updateProgress(e.touches[0].clientX);
+});
+
+document.addEventListener("touchmove", (e) => {
+    if (isDragging) updateProgress(e.touches[0].clientX);
+});
+
+document.addEventListener("touchend", () => {
+    isDragging = false;
+});
+
+/* SKIP */
+document.getElementById("back").onclick = () => video.currentTime -= 10;
+document.getElementById("forward").onclick = () => video.currentTime += 10;
+
+/* 🔥 FULLSCREEN + AUTO LANDSCAPE */
+fs.onclick = async () => {
+    try {
+        if (!document.fullscreenElement) {
+            await player.requestFullscreen();
+
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock("landscape");
+            }
+        } else {
+            await document.exitFullscreen();
+        }
+    } catch (e) {}
+};
+
+document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) {
+        if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
+    }
+
+    fs.innerHTML = document.fullscreenElement
+        ? '<i class="fas fa-compress"></i>'
+        : '<i class="fas fa-expand"></i>';
+});
+
+/* MUTE */
+mute.onclick = () => {
+    video.muted = !video.muted;
+    mute.innerHTML = video.muted
+        ? '<i class="fas fa-volume-mute"></i>'
+        : '<i class="fas fa-volume-up"></i>';
+};
+
+/* DOUBLE TAP SKIP */
+let lastTap = 0;
+video.addEventListener("touchend", e => {
+    let now = new Date().getTime();
+    if (now - lastTap < 300) {
+        let x = e.changedTouches[0].clientX;
+        if (x > window.innerWidth / 2) video.currentTime += 10;
+        else video.currentTime -= 10;
+    }
+    lastTap = now;
+});
+</script>
+
+</body>
+</html>
