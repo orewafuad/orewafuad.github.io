@@ -182,6 +182,15 @@ player.addEventListener("click", showUI);
 
 /* PLAY */
 function togglePlay() {
+    // 🔥 kalau video udah selesai → restart
+    if (video.ended) {
+        video.currentTime = 0;
+        video.play();
+        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        centerPlay.innerHTML = '';
+        return;
+    }
+
     if (video.paused) {
         video.play();
         playBtn.innerHTML = '<i class="fas fa-pause"></i>';
@@ -306,6 +315,14 @@ video.addEventListener("touchend", e => {
         else video.currentTime -= 10;
     }
     lastTap = now;
+});
+    /* =========================
+   🔥 REWATCH MODE
+========================= */
+
+video.addEventListener("ended", () => {
+    playBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
+    centerPlay.innerHTML = '<i class="fas fa-rotate-right"></i>';
 });
 </script>
 
